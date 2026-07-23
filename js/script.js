@@ -97,7 +97,7 @@ if(galleryImages.length){
 }
 
 // ==========================================
-// 3D MULTI-OBJECT FLOATING PHYSICS (MOBILE STABLE)
+// 3D MULTI-OBJECT FLOATING PHYSICS (DRAG & DROP, HIGH RES)
 // ==========================================
 
 const currentPath = window.location.pathname;
@@ -121,20 +121,18 @@ if (isHomePage && container) {
     );
     camera.position.set(0, 0, 10);
 
-    // ERHEBLICHE RAM-ENTLASTUNG FÜR MOBILGERÄTE:
+    // GUTE AUFLÖSUNG & ANTI-ALIASING FÜR BEIDE:
     const renderer = new THREE.WebGLRenderer({ 
         alpha: true, 
-        antialias: !isMobile, // Kein Antialiasing auf Mobile
-        powerPreference: isMobile ? "low-power" : "high-performance",
-        precision: isMobile ? "mediump" : "highp" // Reduziert Shader-Präzision auf Handys
+        antialias: true, // Glatte Kanten wieder für alle an
+        powerPreference: "high-performance",
+        precision: "highp" 
     });
     
-    // Auf Mobile rendern wir mit 75% der Displayauflösung — spart ca. 50% RAM/GPU
-    const renderScale = isMobile ? 0.75 : 1.0;
-    renderer.setSize(window.innerWidth * renderScale, window.innerHeight * renderScale, false);
-    renderer.domElement.style.width = "100%";
-    renderer.domElement.style.height = "100%";
-    renderer.setPixelRatio(1.0); // Feste 1.0 verhindert iOS-WebGL-Crashes
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Laptop kriegt Top-Auflösung, Handy eine leicht gedeckelte, aber sehr scharfe Auflösung (1.5)
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2.0));
     
     container.appendChild(renderer.domElement);
 
@@ -150,8 +148,7 @@ if (isHomePage && container) {
     const world = new CANNON.World();
     world.gravity.set(0, 0, 0); 
     
-    // Weniger Iterationen = weniger CPU-Druck
-    world.solver.iterations = isMobile ? 3 : 10; 
+    world.solver.iterations = isMobile ? 5 : 10; 
 
     const smoothMaterial = new CANNON.Material("smoothMaterial");
     const contactMaterial = new CANNON.ContactMaterial(
@@ -159,7 +156,7 @@ if (isHomePage && container) {
         smoothMaterial,
         {
             friction: 0.1,
-            restitution: 0.2 // Etwas mehr Bounciness beim Anstupsen
+            restitution: 0.1 
         }
     );
     world.addContactMaterial(contactMaterial);
@@ -237,11 +234,8 @@ if (isHomePage && container) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            // Kugelform für Mobilgeräte braucht deutlich weniger Rechenleistung als Boxen
-            const radius = Math.max(size.x, size.y) / 2.2;
-            const shape = isMobile 
-                ? new CANNON.Sphere(radius) 
-                : new CANNON.Box(new CANNON.Vec3(size.x / 2.1, size.y / 2.1, size.z / 2.1));
+            // Präzise Box-Kollision für alle Geräte
+            const shape = new CANNON.Box(new CANNON.Vec3(size.x / 2.1, size.y / 2.1, size.z / 2.1));
 
             const posX = isMobile ? item.startX * 0.35 : item.startX;
 
@@ -250,8 +244,8 @@ if (isHomePage && container) {
                 shape: shape,
                 material: smoothMaterial,
                 position: new CANNON.Vec3(posX, 0, 0),
-                angularDamping: 0.8,
-                linearDamping: 0.6
+                angularDamping: 0.85,
+                linearDamping: 0.75
             });
 
             body.quaternion.copy(mesh.quaternion);
@@ -265,7 +259,7 @@ if (isHomePage && container) {
     });
 
     // -------------------------------------------------------------
-    // 4. INTERAKTION (Desktop: Drag & Drop | Mobile: Leichtes Anstupsen)
+    // 4. INTERAKTION (Universelles Drag & Drop für Mobile & Desktop)
     // -------------------------------------------------------------
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -283,108 +277,88 @@ if (isHomePage && container) {
         };
     }
 
-    if (isMobile) {
-        // MOBILE MODUS: Statt Drag-and-Drop stupsen wir die Objekte nur leicht an
-        window.addEventListener("touchstart", (e) => {
-            if (interactiveObjects.length === 0) return;
+    function onPointerDown(e) {
+        if (interactiveObjects.length === 0) return;
 
-            const pos = getPointerPos(e);
-            mouse.x = pos.x;
-            mouse.y = pos.y;
+        const pos = getPointerPos(e);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
 
-            raycaster.setFromCamera(mouse, camera);
-            const meshesToTest = interactiveObjects.map(obj => obj.mesh);
-            const intersects = raycaster.intersectObjects(meshesToTest, true);
+        raycaster.setFromCamera(mouse, camera);
+        const meshesToTest = interactiveObjects.map(obj => obj.mesh);
+        const intersects = raycaster.intersectObjects(meshesToTest, true);
 
-            if (intersects.length > 0) {
-                let hitMesh = intersects[0].object;
-                while (hitMesh.parent && hitMesh.parent !== scene) {
-                    hitMesh = hitMesh.parent;
-                }
-
-                const hitItem = interactiveObjects.find(obj => obj.mesh === hitMesh);
-                if (hitItem) {
-                    // Gib dem Objekt einen leichten, zufälligen physikalischen Impuls
-                    const forceX = (Math.random() - 0.5) * 3;
-                    const forceY = (Math.random() - 0.5) * 3 + 1; // Leichter Druck nach oben
-                    hitItem.body.applyImpulse(
-                        new CANNON.Vec3(forceX, forceY, 0),
-                        hitItem.body.position
-                    );
-                }
+        if (intersects.length > 0) {
+            let hitMesh = intersects[0].object;
+            while (hitMesh.parent && hitMesh.parent !== scene) {
+                hitMesh = hitMesh.parent;
             }
-        }, { passive: true });
 
-    } else {
-        // DESKTOP MODUS: Klassisches Drag & Drop
-        function onPointerDown(e) {
-            if (interactiveObjects.length === 0) return;
+            selectedItem = interactiveObjects.find(obj => obj.mesh === hitMesh);
 
-            const pos = getPointerPos(e);
-            mouse.x = pos.x;
-            mouse.y = pos.y;
+            if (selectedItem) {
+                isDragging = true;
+                if (e.cancelable) e.preventDefault(); // Verhindert das Scrollen der Seite beim Ziehen
 
-            raycaster.setFromCamera(mouse, camera);
-            const meshesToTest = interactiveObjects.map(obj => obj.mesh);
-            const intersects = raycaster.intersectObjects(meshesToTest, true);
-
-            if (intersects.length > 0) {
-                let hitMesh = intersects[0].object;
-                while (hitMesh.parent && hitMesh.parent !== scene) {
-                    hitMesh = hitMesh.parent;
-                }
-
-                selectedItem = interactiveObjects.find(obj => obj.mesh === hitMesh);
-
-                if (selectedItem) {
-                    isDragging = true;
-                    dragPlane.setFromNormalAndCoplanarPoint(
-                        camera.getWorldDirection(new THREE.Vector3()).negate(),
-                        selectedItem.mesh.position
-                    );
-                }
+                dragPlane.setFromNormalAndCoplanarPoint(
+                    camera.getWorldDirection(new THREE.Vector3()).negate(),
+                    selectedItem.mesh.position
+                );
             }
         }
-
-        function onPointerMove(e) {
-            if (!isDragging || !selectedItem) return;
-
-            const pos = getPointerPos(e);
-            mouse.x = pos.x;
-            mouse.y = pos.y;
-
-            raycaster.setFromCamera(mouse, camera);
-            if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
-                const targetY = Math.min(planeIntersect.y, topLimitY - 0.6);
-
-                selectedItem.body.position.set(planeIntersect.x, targetY, planeIntersect.z);
-                selectedItem.body.velocity.set(0, 0, 0); 
-                selectedItem.body.angularVelocity.set(0.1, 0.1, 0); 
-            }
-        }
-
-        function onPointerUp() {
-            if (isDragging && selectedItem) {
-                isDragging = false;
-                selectedItem.body.velocity.set(0, 0, 0);
-                selectedItem = null;
-            }
-        }
-
-        window.addEventListener("mousedown", onPointerDown);
-        window.addEventListener("mousemove", onPointerMove);
-        window.addEventListener("mouseup", onPointerUp);
     }
 
+    function onPointerMove(e) {
+        if (!isDragging || !selectedItem) return;
+
+        if (e.cancelable) e.preventDefault(); // Zieht flüssiger auf Handys
+
+        const pos = getPointerPos(e);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
+
+        raycaster.setFromCamera(mouse, camera);
+        if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+            const objectPadding = isMobile ? 0.4 : 0.6;
+            const targetY = Math.min(planeIntersect.y, topLimitY - objectPadding);
+
+            selectedItem.body.position.set(planeIntersect.x, targetY, planeIntersect.z);
+            selectedItem.body.velocity.set(0, 0, 0); 
+            selectedItem.body.angularVelocity.set(0.1, 0.1, 0); 
+        }
+    }
+
+    function onPointerUp() {
+        if (isDragging && selectedItem) {
+            isDragging = false;
+            selectedItem.body.velocity.set(0, 0, 0);
+            selectedItem = null;
+        }
+    }
+
+    // Event-Listener für Maus (Desktop)
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("mousemove", onPointerMove);
+    window.addEventListener("mouseup", onPointerUp);
+
+    // Event-Listener für Touch (Mobile)
+    window.addEventListener("touchstart", onPointerDown, { passive: false });
+    window.addEventListener("touchmove", onPointerMove, { passive: false });
+    window.addEventListener("touchend", onPointerUp);
+
+    // -------------------------------------------------------------
     // 5. Resize Event
+    // -------------------------------------------------------------
     window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth * renderScale, window.innerHeight * renderScale, false);
+        renderer.setSize(window.innerWidth, window.innerHeight);
         createBounds();
     });
 
-    // 6. Animation Loop (Mit maximaler Geschwindigkeitsbegrenzung gegen Physics-Blowup)
+    // -------------------------------------------------------------
+    // 6. Animation Loop (Mit Anti-Blowup-Sicherung)
+    // -------------------------------------------------------------
     const timeStep = 1 / 60;
     function animate() {
         requestAnimationFrame(animate);
@@ -392,9 +366,9 @@ if (isHomePage && container) {
         world.step(timeStep);
 
         interactiveObjects.forEach(obj => {
-            // Begrenze maximale Geschwindigkeit, um Abstürze durch Physik-Clashing zu vermeiden
-            obj.body.velocity.x = Math.max(-5, Math.min(5, obj.body.velocity.x));
-            obj.body.velocity.y = Math.max(-5, Math.min(5, obj.body.velocity.y));
+            // Die wichtigste Sicherung gegen Handy-Abstürze beim Drag & Drop!
+            obj.body.velocity.x = Math.max(-10, Math.min(10, obj.body.velocity.x));
+            obj.body.velocity.y = Math.max(-10, Math.min(10, obj.body.velocity.y));
             
             obj.body.position.z *= 0.8;
             obj.mesh.position.copy(obj.body.position);
