@@ -212,10 +212,10 @@ if (isHomePage && container) {
         { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.3, dX: -2.6, dY: 0, mX: 0,    mY: 1.5,  rotateY: 0 },
         
         // Feuerzeug 1: Desktop Mitte links | Mobile: Mitte links
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.1, dX: -0.5, dY: 0, mX: -0.9, mY: -1,    rotateY: 0 },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.1, dX: -0.5, dY: 0, mX: -0.6, mY: -1,    rotateY: 0 },
         
         // Feuerzeug 2: Desktop Mitte rechts | Mobile: Mitte rechts
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.1, dX: 0.5,  dY: 0, mX: 0.9,  mY: -1,    rotateY: Math.PI },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.1, dX: 0.5,  dY: 0, mX: 0.6,  mY: -1,    rotateY: Math.PI },
         
         // Sketchbook: Desktop ganz rechts | Mobile: Unten Mitte
         { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.6, dX: 2.6,  dY: 0, mX: 0,    mY: -2.8, rotateY: Math.PI }
