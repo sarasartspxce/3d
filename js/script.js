@@ -209,16 +209,16 @@ if (isHomePage && container) {
     // -------------------------------------------------------------
     const itemsToLoad = [
         // Nikon: Desktop ganz links | Mobile: Oben Mitte
-        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.3, dX: -2.6, dY: 0, mX: 0,    mY: 1,  rotateY: 0 },
+        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.3, dX: -2.6, dY: 0, mX: 0,    mY: 1,  rotateY: 0, url: 'concert.html' },
         
         // Feuerzeug 1: Desktop Mitte links | Mobile: Mitte links
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: -0.5, dY: 0, mX: -0.5, mY: -1.2,    rotateY: 0 },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: -0.5, dY: 0, mX: -0.5, mY: -1.2,    rotateY: 0, url: 'design.html' },
         
         // Feuerzeug 2: Desktop Mitte rechts | Mobile: Mitte rechts
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: 0.5,  dY: 0, mX: 0.5,  mY: -1.2,    rotateY: Math.PI },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: 0.5,  dY: 0, mX: 0.5,  mY: -1.2,    rotateY: Math.PI, url: 'design.html' },
         
         // Sketchbook: Desktop ganz rechts | Mobile: Unten Mitte
-        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.9, dX: 2.6,  dY: 0, mX: 0,    mY: -3.0, rotateY: Math.PI }
+        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.9, dX: 2.6,  dY: 0, mX: 0,    mY: -3.0, rotateY: Math.PI, url: 'art.html' }
     ];
 
     const interactiveObjects = [];
@@ -260,7 +260,7 @@ if (isHomePage && container) {
             body.quaternion.copy(mesh.quaternion);
 
             world.addBody(body);
-            interactiveObjects.push({ mesh, body });
+            interactiveObjects.push({ mesh, body, url: item.url });
 
         }, undefined, (error) => {
             console.error(`Fehler beim Laden von ${item.file}:`, error);
@@ -268,7 +268,7 @@ if (isHomePage && container) {
     });
 
     // -------------------------------------------------------------
-    // 4. INTERAKTION (Universelles Drag & Drop für Mobile & Desktop)
+    // 4. INTERAKTION (Drag & Drop + DOPPELKLICK-WEITERLEITUNG)
     // -------------------------------------------------------------
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -276,6 +276,9 @@ if (isHomePage && container) {
     let selectedItem = null;
     let dragPlane = new THREE.Plane();
     let planeIntersect = new THREE.Vector3();
+    
+    // NEU: Speichert die Zeit des letzten Klicks
+    let lastClickTime = 0; 
 
     function getPointerPos(e) {
         const x = e.touches ? e.touches[0].clientX : e.clientX;
@@ -297,6 +300,11 @@ if (isHomePage && container) {
         const meshesToTest = interactiveObjects.map(obj => obj.mesh);
         const intersects = raycaster.intersectObjects(meshesToTest, true);
 
+        // Zeit seit dem letzten Tap/Klick berechnen
+        const currentTime = new Date().getTime();
+        const timeSinceLastClick = currentTime - lastClickTime;
+        lastClickTime = currentTime;
+
         if (intersects.length > 0) {
             let hitMesh = intersects[0].object;
             while (hitMesh.parent && hitMesh.parent !== scene) {
@@ -306,8 +314,16 @@ if (isHomePage && container) {
             selectedItem = interactiveObjects.find(obj => obj.mesh === hitMesh);
 
             if (selectedItem) {
+                // DOPPELKLICK-CHECK: Wenn weniger als 300ms vergangen sind und eine URL existiert
+                if (timeSinceLastClick < 300 && selectedItem.url) {
+                    window.location.href = selectedItem.url; // Leitet auf die jeweilige Seite um
+                    isDragging = false; // Bricht das Draggen ab
+                    return; 
+                }
+
+                // Normales Drag & Drop (Einzelklick/Halten)
                 isDragging = true;
-                if (e.cancelable) e.preventDefault(); // Verhindert das Scrollen der Seite beim Ziehen
+                if (e.cancelable) e.preventDefault(); 
 
                 dragPlane.setFromNormalAndCoplanarPoint(
                     camera.getWorldDirection(new THREE.Vector3()).negate(),
@@ -320,7 +336,7 @@ if (isHomePage && container) {
     function onPointerMove(e) {
         if (!isDragging || !selectedItem) return;
 
-        if (e.cancelable) e.preventDefault(); // Zieht flüssiger auf Handys
+        if (e.cancelable) e.preventDefault(); 
 
         const pos = getPointerPos(e);
         mouse.x = pos.x;
@@ -354,7 +370,6 @@ if (isHomePage && container) {
     window.addEventListener("touchstart", onPointerDown, { passive: false });
     window.addEventListener("touchmove", onPointerMove, { passive: false });
     window.addEventListener("touchend", onPointerUp);
-
     // -------------------------------------------------------------
     // 5. Resize Event
     // -------------------------------------------------------------
