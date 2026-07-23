@@ -208,10 +208,17 @@ if (isHomePage && container) {
     // 3. OBJEKTE PLATZIEREN
     // -------------------------------------------------------------
     const itemsToLoad = [
-        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.2, startX: -2.6, rotateY: 0 },
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 1.9, startX: -0.5, rotateY: 0 },
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 1.9, startX: 0.5,  rotateY: Math.PI },
-        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.4, startX: 2.6, rotateY: Math.PI }
+        // Nikon: Desktop ganz links | Mobile: Oben Mitte
+        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.2, dX: -2.6, dY: 0, mX: 0,    mY: 2.8,  rotateY: 0 },
+        
+        // Feuerzeug 1: Desktop Mitte links | Mobile: Mitte links
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 1.9, dX: -0.5, dY: 0, mX: -0.9, mY: 0,    rotateY: 0 },
+        
+        // Feuerzeug 2: Desktop Mitte rechts | Mobile: Mitte rechts
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 1.9, dX: 0.5,  dY: 0, mX: 0.9,  mY: 0,    rotateY: Math.PI },
+        
+        // Sketchbook: Desktop ganz rechts | Mobile: Unten Mitte
+        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.4, dX: 2.6,  dY: 0, mX: 0,    mY: -2.8, rotateY: Math.PI }
     ];
 
     const interactiveObjects = [];
@@ -237,13 +244,15 @@ if (isHomePage && container) {
             // Präzise Box-Kollision für alle Geräte
             const shape = new CANNON.Box(new CANNON.Vec3(size.x / 2.1, size.y / 2.1, size.z / 2.1));
 
-            const posX = isMobile ? item.startX * 0.35 : item.startX;
+            // Position je nach Gerät wählen
+            const posX = isMobile ? item.mX : item.dX;
+            const posY = isMobile ? item.mY : item.dY;
 
             const body = new CANNON.Body({
                 mass: 1,
                 shape: shape,
                 material: smoothMaterial,
-                position: new CANNON.Vec3(posX, 0, 0),
+                position: new CANNON.Vec3(posX, posY, 0),
                 angularDamping: 0.85,
                 linearDamping: 0.75
             });
