@@ -51,6 +51,12 @@ header{
     transform:translateX(-50%);
 }
 
+.logo-klasse {
+    position: relative; 
+    z-index: 100;       
+    pointer-events: auto; 
+}
+
 .logo img{
     width:90px;
     height:auto;
