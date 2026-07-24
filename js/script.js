@@ -209,16 +209,17 @@ if (isHomePage && container) {
     // -------------------------------------------------------------
     const itemsToLoad = [
         // Nikon: Desktop ganz links | Mobile: Oben Mitte
-        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.3, dX: -2.6, dY: 0, mX: 0,    mY: 1,  rotateY: 0, url: 'concert.html' },
+        { file: 'models/nikon.glb',      scaleD: 3.0, scaleM: 2.3, dX: -3.0, dY: 0, mX: 0,    mY: 1,  rotateY: 0, url: 'concert.html' },
         
         // Feuerzeug 1: Desktop Mitte links | Mobile: Mitte links
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: -0.5, dY: 0, mX: -0.5, mY: -1.2,    rotateY: 0, url: 'design.html' },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: -1.2, dY: 0, mX: -0.5, mY: -1.1,    rotateY: 0, url: 'design.html' },
         
         // Feuerzeug 2: Desktop Mitte rechts | Mobile: Mitte rechts
-        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: 0.5,  dY: 0, mX: 0.5,  mY: -1.2,    rotateY: Math.PI, url: 'design.html' },
+        { file: 'models/feuerzeug.glb',  scaleD: 3.0, scaleM: 2.5, dX: -0.5,  dY: 0, mX: 0.5,  mY: -1.1,    rotateY: Math.PI, url: 'design.html' },
         
         // Sketchbook: Desktop ganz rechts | Mobile: Unten Mitte
-        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.9, dX: 2.6,  dY: 0, mX: 0,    mY: -3.0, rotateY: Math.PI, url: 'art.html' }
+        { file: 'models/sketchbook.glb', scaleD: 3.8, scaleM: 2.9, dX: 1.3,  dY: 0, mX: 0,    mY: -3.0, rotateY: Math.PI, url: 'art.html' },
+        { file: 'models/ball.glb', scaleD: 4.5, scaleM: 2.5, dX: 3.4,  dY: 0, mX: 0,    mY: -1.8, url: 'sports.html' }
     ];
 
     const interactiveObjects = [];
